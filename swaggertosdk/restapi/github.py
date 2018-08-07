@@ -1,43 +1,28 @@
-import os
-from enum import Enum
-import hmac
 import hashlib
+import hmac
 import logging
-from queue import Queue
+import os
 import traceback
+from queue import Queue
 from threading import Thread
 
-from flask import request, jsonify
-
+from azure_devtools.ci_tools.bot_framework import BotHandler
+from azure_devtools.ci_tools.github_tools import (DashboardCommentableObject,
+                                                  exception_to_github)
+from flask import jsonify, request
 from github import Github
 
-from azure_devtools.ci_tools.bot_framework import (
-    BotHandler
-)
-from .sdkbot import (
-    GithubHandler
-)
-from .restbot import (
-    RestAPIRepoHandler
-)
-from .github_handler import (
-    rest_pr_management,
-    generate_sdk_from_git_object
-)
-from azure_devtools.ci_tools.github_tools import (
-    exception_to_github,
-    DashboardCommentableObject,
-)
 from . import app
+from .github_handler import generate_sdk_from_git_object, rest_pr_management
+from .restbot import RestAPIRepoHandler
+from .sdkbot import GithubHandler
 
+_HMAC_CHECK = False
 _LOGGER = logging.getLogger("swaggertosdk.restapi.github")
 _QUEUE = Queue(64)
 
-
 # Webhook secreet to authenticate message (bytes)
 SECRET = b'mydeepsecret'
-
-_HMAC_CHECK = False
 
 def check_hmac(local_request, secret):
     data = local_request.get_data()
@@ -105,7 +90,7 @@ def notify_github(github_index, event_type, json_body):
         return github_index[event_type](json_body)
     return {'message': 'Not handled currently'}
 
-def ping(body):
+def ping(body): # pylint: disable=unused-argument
     return {'message': 'Moi aussi zen beaucoup'}
 
 def push(body):
@@ -207,7 +192,7 @@ def consume():
         _LOGGER.info("Pop from queue. Queue size: %d", _QUEUE.qsize())
         try:
             rest_handle_action(body, sdkid, sdkbase, sdk_tag)
-        except Exception as err:
+        except Exception: # pylint: disable=broad-except
             _LOGGER.critical("Worked thread issue:\n%s", traceback.format_exc())
     _LOGGER.info("End of WorkerThread")
 

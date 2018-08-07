@@ -1,23 +1,11 @@
-from enum import Enum
 import logging
-import os
-from pathlib import Path
-import tempfile
+from enum import Enum
 
-from github import UnknownObjectException, GithubException
+from azure_devtools.ci_tools.github_tools import get_or_create_pull
+from github import GithubException, UnknownObjectException
 
-from swaggertosdk.SwaggerToSdkCore import (
-    get_context_tag_from_git_object,
-)
+from swaggertosdk.SwaggerToSdkCore import get_context_tag_from_git_object
 from swaggertosdk.SwaggerToSdkNewCLI import generate_sdk_from_git_object
-from azure_devtools.ci_tools.github_tools import (
-    get_or_create_pull,
-    manage_git_folder,
-    configure_user,
-    user_from_token
-)
-
-from git import Repo
 
 _LOGGER = logging.getLogger("swaggertosdk.restapi.github_handler")
 
@@ -64,7 +52,7 @@ def manage_labels(issue, to_add=None, to_remove=None):
     for label_add in to_add:
         try:
             issue.add_to_labels(get_or_create_label(issue.repository, label_add))
-        except Exception as err:
+        except Exception: # pylint: disable=broad-except
             # Never fail is adding a label was impossible
             _LOGGER.warning("Unable to add label: %s", label_add)
 
@@ -160,7 +148,7 @@ def rest_pr_management(commentable, rest_pr, sdk_repo, sdk_tag, sdk_default_base
             head=sdk_repo.owner.login+":"+sdk_pr_head,
             base=sdk_pr_base,
         )
-    except Exception as err:
+    except Exception as err: # pylint: disable=broad-except
         _LOGGER.warning("Unable to create SDK PR: %s", err)
         commentable.create_comment("### Nothing to generate\nThe changes in this pull request did not result in any changes in the {} repository.".format(sdk_tag))
         return
@@ -186,7 +174,7 @@ def rest_pr_management(commentable, rest_pr, sdk_repo, sdk_tag, sdk_default_base
                     sdk_pr_merged = True
                     # Delete branch from merged PR
                     head_ref.delete()
-                except Exception as err:
+                except Exception as err: # pylint: disable=broad-except
                     _LOGGER.warning("Was unable to merge: %s", err)
         else:
             manage_labels(sdk_pr_as_issue,
@@ -213,7 +201,7 @@ def rest_pr_management(commentable, rest_pr, sdk_repo, sdk_tag, sdk_default_base
                 head=sdk_repo.owner.login+":"+sdk_pr_base,
                 base=sdk_default_base,
             )
-        except Exception as err:
+        except Exception as err: # pylint: disable=broad-except
             _LOGGER.warning("Unable to create context PR: %s", err)
             return
         # We got the context PR!

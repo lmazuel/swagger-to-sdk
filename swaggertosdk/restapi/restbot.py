@@ -1,10 +1,10 @@
-import os
 import logging
-
-from github import Github
+import os
 
 from azure_devtools.ci_tools.bot_framework import order
-from .github_handler import rest_pr_management, clean_sdk_pr
+from github import Github
+
+from .github_handler import clean_sdk_pr, rest_pr_management
 
 _LOGGER = logging.getLogger("swaggertosdk.restapi.restbot")
 

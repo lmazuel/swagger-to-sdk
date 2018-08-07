@@ -1,27 +1,17 @@
 import logging
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
+from azure_devtools.ci_tools.bot_framework import order
+from azure_devtools.ci_tools.git_tools import do_commit
+from azure_devtools.ci_tools.github_tools import (GithubLink, configure_user,
+                                                  manage_git_folder)
 from git import Repo
 
-from swaggertosdk.SwaggerToSdkCore import (
-    CONFIG_FILE,
-    read_config_from_github,
-    build_swaggertosdk_conf_from_json_readme,
-)
-from azure_devtools.ci_tools.git_tools import (
-    do_commit,
-)
-from azure_devtools.ci_tools.github_tools import (
-    configure_user,
-    manage_git_folder,
-    GithubLink
-)
 from swaggertosdk.python_sdk_tools import build_installation_message
-from azure_devtools.ci_tools.bot_framework import (
-    order
-)
+from swaggertosdk.SwaggerToSdkCore import (build_swaggertosdk_conf_from_json_readme,
+                                           read_config_from_github)
 
 _LOGGER = logging.getLogger("swaggertosdk.restapi.sdkbot")
 
@@ -101,7 +91,6 @@ class GithubHandler:
 
         new_comment = issue.create_comment("Working on generating {} for you!!!".format(project_pattern))
 
-        config_path = CONFIG_FILE
         message = "Rebuild by "+issue.html_url
         autorest_bin = None
 
