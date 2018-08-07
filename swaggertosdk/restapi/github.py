@@ -165,26 +165,26 @@ def rest_handle_action(body, sdkid, sdkbase, sdk_tag):
     _LOGGER.info("Received PR action %s", body["action"])
     with exception_to_github(dashboard, sdk_tag):
         if body["action"] in ["opened", "reopened"]:
-            return rest_pull_open(body, restapi_repo, sdk_pr_target_repo, sdkbase, sdk_tag)
+            return rest_pull_open(dashboard, body, restapi_repo, sdk_pr_target_repo, sdkbase, sdk_tag)
         if body["action"] == "closed":
-            return rest_pull_close(body, restapi_repo, sdk_pr_target_repo, sdkbase, sdk_tag)
+            return rest_pull_close(dashboard, body, restapi_repo, sdk_pr_target_repo, sdkbase, sdk_tag)
         if body["action"] == "synchronize": # push to a PR from a fork
-            return rest_pull_sync(body, restapi_repo, sdk_pr_target_repo, sdkbase, sdk_tag)
+            return rest_pull_sync(dashboard, body, restapi_repo, sdk_pr_target_repo, sdkbase, sdk_tag)
 
-def rest_pull_open(body, restapi_repo, sdk_pr_target_repo, sdk_default_base="master", sdk_tag=None):
+def rest_pull_open(commentable, body, restapi_repo, sdk_pr_target_repo, sdk_default_base="master", sdk_tag=None):
     _LOGGER.info("Received a PR open event")
 
     rest_pr = restapi_repo.get_pull(body["number"])
-    rest_pr_management(rest_pr, sdk_pr_target_repo, sdk_tag, sdk_default_base)
+    rest_pr_management(commentable, rest_pr, sdk_pr_target_repo, sdk_tag, sdk_default_base)
 
 
-def rest_pull_close(body, restapi_repo, sdk_pr_target_repo, sdk_default_base="master", sdk_tag=None):
+def rest_pull_close(commentable, body, restapi_repo, sdk_pr_target_repo, sdk_default_base="master", sdk_tag=None):
     _LOGGER.info("Received a PR closed event")
 
     rest_pr = restapi_repo.get_pull(body["number"])
-    rest_pr_management(rest_pr, sdk_pr_target_repo, sdk_tag, sdk_default_base)
+    rest_pr_management(commentable, rest_pr, sdk_pr_target_repo, sdk_tag, sdk_default_base)
 
-def rest_pull_sync(body, restapi_repo, sdk_pr_target_repo, sdk_default_base="master", sdk_tag=None):
+def rest_pull_sync(commentable, body, restapi_repo, sdk_pr_target_repo, sdk_default_base="master", sdk_tag=None):
 
     # If this sync has no commit change, save CPU time.
     if body["before"] == body["after"]:
@@ -197,7 +197,7 @@ def rest_pull_sync(body, restapi_repo, sdk_pr_target_repo, sdk_default_base="mas
         return
 
     rest_pr = restapi_repo.get_pull(body["number"])
-    rest_pr_management(rest_pr, sdk_pr_target_repo, sdk_tag, sdk_default_base)
+    rest_pr_management(commentable, rest_pr, sdk_pr_target_repo, sdk_tag, sdk_default_base)
 
 def consume():
     """Consume action and block if there is not.

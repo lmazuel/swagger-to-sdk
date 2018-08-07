@@ -31,3 +31,4 @@ def generate_project(*args, **kwargs):
     )
 
 from .github import *
+from .travis import *

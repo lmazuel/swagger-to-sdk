@@ -12,7 +12,6 @@ from swaggertosdk.SwaggerToSdkCore import (
 from swaggertosdk.SwaggerToSdkNewCLI import generate_sdk_from_git_object
 from azure_devtools.ci_tools.github_tools import (
     get_or_create_pull,
-    DashboardCommentableObject,
     manage_git_folder,
     configure_user,
     user_from_token
@@ -69,7 +68,7 @@ def manage_labels(issue, to_add=None, to_remove=None):
             # Never fail is adding a label was impossible
             _LOGGER.warning("Unable to add label: %s", label_add)
 
-def rest_pr_management(rest_pr, sdk_repo, sdk_tag, sdk_default_base=_DEFAULT_SDK_BRANCH):
+def rest_pr_management(commentable, rest_pr, sdk_repo, sdk_tag, sdk_default_base=_DEFAULT_SDK_BRANCH):
     """What to do when something happen to a PR in the Rest repo.
 
     :param restpr: a PyGithub pull object
@@ -84,19 +83,16 @@ def rest_pr_management(rest_pr, sdk_repo, sdk_tag, sdk_default_base=_DEFAULT_SDK
     # "repo" can be None if fork has been deleted.
     is_from_a_fork = rest_pr.head.repo is None or rest_pr.head.repo.full_name != rest_repo.full_name
 
-    # THE comment were we put everything
-    dashboard = DashboardCommentableObject(rest_pr, "# Automation for {}".format(sdk_tag))
-
     #
     # Work on context, ext if context is not good
     #
     context_tags = list(get_context_tag_from_git_object(rest_pr))
     if not context_tags:
-        dashboard.create_comment("Unable to detect any generation context from this PR.")
+        commentable.create_comment("### No generation context\nUnable to detect any generation context from this pull request.")
         return
     if len(context_tags) > _CONTEXT_TAG_LIMITS:
-        dashboard.create_comment(
-            "This PR contains more than {} context, SDK generation is not enabled. Contexts found:\n{}".format(
+        commentable.create_comment(
+            "### Too many contexts\nThis pull request contains more than {} contexts, SDK generation has been skipped. Contexts found:\n{}".format(
                 _CONTEXT_TAG_LIMITS,
                 "\n".join(["- {}".format(ctxt) for ctxt in context_tags])
             ))
@@ -166,11 +162,11 @@ def rest_pr_management(rest_pr, sdk_repo, sdk_tag, sdk_default_base=_DEFAULT_SDK
         )
     except Exception as err:
         _LOGGER.warning("Unable to create SDK PR: %s", err)
-        dashboard.create_comment("Nothing to generate for {}".format(sdk_tag))
+        commentable.create_comment("### Nothing to generate\nThe changes in this pull request did not result in any changes in the {} repository.".format(sdk_tag))
         return
 
     # Replace whatever message it was if we were able to do a PR
-    dashboard.create_comment("A PR has been created for you:\n{}".format(sdk_pr.html_url))
+    commentable.create_comment("### Pull request created\nPull request {}#{} has been created for you based on the changes in this pull request.".format(sdk_repo.full_name, sdk_pr.number))
 
     #
     # Manage labels/state on this SDK PR.
@@ -227,19 +223,20 @@ def rest_pr_management(rest_pr, sdk_repo, sdk_tag, sdk_default_base=_DEFAULT_SDK
         if sdk_pr_merged:
             sdk_pr.create_issue_comment("This PR has been merged into {}".format(context_pr.html_url))
         # Update dashboar to talk about this PR
+        msg = "Pull request {}#{} was created for you based on the changes in this pull request.\n".format(sdk_repo.full_name, sdk_pr.number)
         if sdk_pr.merged:
-            msg = "The initial [PR]({}) has been merged into your service PR:\n{}".format(
-                sdk_pr.html_url,
-                context_pr.html_url
+            title = "Pull request created and integrated"
+            msg += "It has been merged into the service pull request located here: {}#{}".format(
+                sdk_repo.full_name,
+                context_pr.number
             )
         else:
-            msg = "A [PR]({}) has been created for you based on this PR content.\n\n".format(
-                sdk_pr.html_url
+            title = "Pull request created, pending integration"
+            msg += "Once this pull request is merged, content will be added to the service pull request located here: {}#{}".format(
+                sdk_repo.full_name,
+                context_pr.number
             )
-            msg += "Once this PR will be merged, content will be added to your service PR:\n{}".format(
-                context_pr.html_url
-            )
-        dashboard.create_comment(msg)
+        commentable.create_comment("### {}\n{}".format(title, msg))
 
 def clean_sdk_pr(rest_pr, sdk_repo):
     """Look for the SDK pr created by this RestPR and wipe it.
