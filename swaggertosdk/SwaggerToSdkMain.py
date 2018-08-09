@@ -76,6 +76,7 @@ def main(argv):
     """Main method"""
 
     if "--rest-server" in argv:
+        from gevent.pywsgi import WSGIServer
         from .restapi import app
         log_level = logging.WARNING
         if "-v" in argv or "--verbose" in argv:
@@ -87,7 +88,9 @@ def main(argv):
         logging.basicConfig()
         main_logger.setLevel(log_level)
 
-        app.run(debug=log_level == logging.DEBUG, host='0.0.0.0')
+        http_server = WSGIServer(('', 5000), app)
+        main_logger.info("REST server is listening on: http://%s:%s", http_server.server_host, http_server.server_port)
+        http_server.serve_forever()
         sys.exit(0)
 
     parser = argparse.ArgumentParser(

@@ -21,6 +21,7 @@ setup(
     ],
     install_requires=[
         "azure-devtools[ci_tools]>=1.1.1",
+        "gevent",
         "requests",
         "cookiecutter",
         "wheel"
