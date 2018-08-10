@@ -1,10 +1,12 @@
 from flask import Flask
+from flask_request_id import RequestID
 from jsonrpc.backend.flask import api
 
 from ..SwaggerToSdkMain import generate_sdk
 from ..SwaggerToSdkCore import CONFIG_FILE, DEFAULT_COMMIT_MESSAGE
 
 app = Flask(__name__)
+RequestID(app)
 app.add_url_rule('/', 'api', api.as_view(), methods=['POST'])
 
 @api.dispatcher.add_method

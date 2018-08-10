@@ -78,6 +78,18 @@ def main(argv):
     if "--rest-server" in argv:
         from gevent.pywsgi import WSGIServer
         from .restapi import app
+        from flask import request
+
+        old_factory = logging.getLogRecordFactory()
+        def request_record_factory(*args, **kwargs):
+            record = old_factory(*args, **kwargs)
+            if request:
+                record.requestid = request.environ.get("FLASK_REQUEST_ID")
+            else:
+                record.requestid = "(none)"
+            return record
+        logging.setLogRecordFactory(request_record_factory)
+
         log_level = logging.WARNING
         if "-v" in argv or "--verbose" in argv:
             log_level = logging.INFO
@@ -85,10 +97,10 @@ def main(argv):
             log_level = logging.DEBUG
 
         main_logger = logging.getLogger()
-        logging.basicConfig()
+        logging.basicConfig(format="%(requestid)s:%(levelname)s:%(name)s:%(message)s")
         main_logger.setLevel(log_level)
 
-        http_server = WSGIServer(('', 5000), app)
+        http_server = WSGIServer(('', 5000), app, log=logging.getLogger("WSGIServer"))
         main_logger.info("REST server is listening on: http://%s:%s", http_server.server_host, http_server.server_port)
         http_server.serve_forever()
         sys.exit(0)

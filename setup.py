@@ -29,6 +29,7 @@ setup(
     extras_require={
         'rest': [
             'flask',
+            'flask-request-id-middleware',
             'json-rpc'
         ]
     },

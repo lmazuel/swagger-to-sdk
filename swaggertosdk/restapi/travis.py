@@ -29,6 +29,13 @@ class ChecksCommentableObject:
             "summary": summary
         }
 
+class RequestFilter(logging.Filter): # pylint: disable=too-few-public-methods
+    def __init__(self, request_id): # pylint: disable=super-init-not-called
+        self._request_id = request_id
+
+    def filter(self, record):
+        return 'requestid' in record.__dict__ and record.requestid == self._request_id
+
 def exception_to_output(err, trace):
     error_type = type(err).__name__
     if isinstance(err, CalledProcessError):
@@ -55,6 +62,7 @@ def travis_notify():
     root_logger = logging.getLogger()
     handler = logging.StreamHandler(log)
     handler.setFormatter(logging.Formatter("%(levelname)s:%(name)s:%(message)s"))
+    handler.addFilter(RequestFilter(request.environ.get("FLASK_REQUEST_ID")))
     root_logger.addHandler(handler)
 
     try:
