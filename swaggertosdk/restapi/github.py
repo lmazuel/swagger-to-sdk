@@ -53,11 +53,11 @@ def notify():
 def rest_notify():
     """Github rest endpoint."""
     sdkid = request.args.get("sdkid")
-    sdkbase = request.args.get("sdkbase", "master")
-    sdk_tag = request.args.get("repotag", sdkid.split("/")[-1].lower())
-
     if not sdkid:
         return {'message': 'sdkid is a required query parameter'}
+
+    sdkbase = request.args.get("sdkbase", "master")
+    sdk_tag = request.args.get("repotag", sdkid.split("/")[-1].lower())
 
     rest_bot = RestAPIRepoHandler(sdkid, sdk_tag, sdkbase)
     bot = BotHandler(rest_bot)
