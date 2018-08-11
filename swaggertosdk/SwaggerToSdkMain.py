@@ -77,16 +77,18 @@ def main(argv):
 
     if "--rest-server" in argv:
         from gevent.pywsgi import WSGIServer
-        from .restapi import app
+        from .restapi import app, ProxyAwareHandler, RealRequestFilter
         from flask import request
 
         old_factory = logging.getLogRecordFactory()
         def request_record_factory(*args, **kwargs):
             record = old_factory(*args, **kwargs)
             if request:
-                record.requestid = request.environ.get("FLASK_REQUEST_ID")
+                record.requestid = request.environ.get("FLASK_REQUEST_ID") + ":"
+            elif record.name == "WSGIServer":
+                record.requestid = ""
             else:
-                record.requestid = "(none)"
+                record.requestid = ":"
             return record
         logging.setLogRecordFactory(request_record_factory)
 
@@ -97,10 +99,12 @@ def main(argv):
             log_level = logging.DEBUG
 
         main_logger = logging.getLogger()
-        logging.basicConfig(format="%(requestid)s:%(levelname)s:%(name)s:%(message)s")
+        logging.basicConfig(format="%(levelname)s:%(name)s:%(requestid)s%(message)s")
         main_logger.setLevel(log_level)
 
-        http_server = WSGIServer(('', 5000), app, log=logging.getLogger("WSGIServer"))
+        http_logger = logging.getLogger("WSGIServer")
+        http_logger.addFilter(RealRequestFilter())
+        http_server = WSGIServer(('', 5000), app, log=http_logger, handler_class=ProxyAwareHandler)
         main_logger.info("REST server is listening on: http://%s:%s", http_server.server_host, http_server.server_port)
         http_server.serve_forever()
         sys.exit(0)

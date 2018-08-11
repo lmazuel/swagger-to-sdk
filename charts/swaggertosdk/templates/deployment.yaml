@@ -1,0 +1,61 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "swaggertosdk.fullname" . }}
+  labels:
+    app: {{ template "swaggertosdk.name" . }}
+    chart: {{ template "swaggertosdk.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "swaggertosdk.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "swaggertosdk.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.container.command }}
+          command: {{ . | toJson }}
+          {{- end }}
+          {{- with .Values.container.args }}
+          args: {{ . | toJson }}
+          {{- end }}
+          {{- with .Values.container.env }}
+          env:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ default 80 .Values.container.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ default "/" .Values.container.probePath }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: {{ default "/" .Values.container.probePath }}
+              port: http
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

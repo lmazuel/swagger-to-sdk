@@ -1,0 +1,16 @@
+.git/
+.vscode
+.pytest_cache
+env/
+swaggertosdk.egg_info/
+tests/
+.checkignore
+.coverage
+.gitignore
+.gitattributes
+.travis.yml
+LICENSE
+pylintrc
+*.md
+Dockerfile
+charts/
